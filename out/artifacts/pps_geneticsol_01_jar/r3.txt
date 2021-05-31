@@ -1,0 +1,6 @@
+Poblacion Inicial, mejor fitness = 1.6685714285714284
+Generación: 1, mejor fitness = 2.224126984126984
+Generación: 2, mejor fitness = 2.224126984126984
+Generación: 3, mejor fitness = 2.224126984126984
+[0, 1, 1, 1]
+Se generaron los proyectos
