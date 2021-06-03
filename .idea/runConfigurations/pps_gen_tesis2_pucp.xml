@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="pps_gen_tesis2_pucp" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="SeleccionPortafolioProyectos" />
+    <module name="pps_gen_tesis2_pucp" />
+    <option name="PROGRAM_PARAMETERS" value="dataset05" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -1,5 +1,7 @@
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class Individuo {
     List<Integer> cromosoma;
@@ -69,14 +71,26 @@ public class Individuo {
         return nuevosIndividuos;
     }
 
-    public void mutarIndividuo() {
+    public void mutarIndividuo(double pmut) {
         int index = 0;
         for (Integer gen : this.getCromosoma()) {
-            if(Math.random() < 0.5){
+            if (Math.random() < pmut) {
                 if (gen == 0) this.getCromosoma().set(index, 1);
-                else this.getCromosoma().set(index, 0);;
+                else this.getCromosoma().set(index, 0);
             }
             index++;
+        }
+    }
+
+    public void mutarIndividuoTMut(double pmut) {
+        int cantGenesMut = (int) Math.ceil(this.cromosoma.size() * pmut);
+        for (int i = 0; i < cantGenesMut; i++) {
+            int posAle = (int)Math.ceil(Math.random() * (this.cromosoma.size()-1));
+            if (this.cromosoma.get(posAle).equals(0)) {
+                this.cromosoma.set(posAle, 1);
+            } else {
+                this.cromosoma.set(posAle, 0);
+            }
         }
     }
 
@@ -86,7 +100,18 @@ public class Individuo {
         for (int i = 0; i < this.cromosoma.size(); i++) {
             ind = ind + this.cromosoma.get(i);
         }
-        ind += " " + this.getFitness();
+        DecimalFormat df = new DecimalFormat();
+        df.setMaximumFractionDigits(3);
+
+        ind += "::(Ft:" + df.format(this.getFitness()) + ")";
+        return ind;
+    }
+
+    public String imprimirSimple() {
+        String ind = "";
+        for (int i = 0; i < this.cromosoma.size(); i++) {
+            ind = ind + this.cromosoma.get(i);
+        }
         return ind;
     }
 }

@@ -1,3 +1,4 @@
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -37,44 +38,45 @@ public class HelperGenetico {
     }
 
     public List<Individuo> elegirPadrePorRuleta(List<Individuo> poblacion) {
+        DecimalFormat df = new DecimalFormat();
+        df.setMaximumFractionDigits(2);
+
         int indexPadre1 = 0;
         int indexPadre2 = 0;
 
         double fitnessTotal = 0;
-        for (Individuo idv : poblacion) { // Sumamos el fitness total de la población
-            fitnessTotal += idv.getFitness();
+        for (Individuo p : poblacion) {
+            fitnessTotal += p.getFitness();
         }
-        // double agujaRuleta = this.getAleatorioEnteroEntre(0, (int) (fitnessTotal));
+
         double agujaRuleta = Math.random() * fitnessTotal;
-        //System.out.println("Valor de la aguja para 1er padre:" + agujaRuleta + "ft=" + fitnessTotal);
+        System.out.println("TotalFitness: " + df.format(fitnessTotal) + " Ruleta 1: " + df.format(agujaRuleta));
+        
         /* Escogemos al primer padre */
         double fitnessAcumulado = 0;
         int index = 0;
-        for (Individuo i : poblacion) {
-            fitnessAcumulado += i.getFitness();
-            if (fitnessAcumulado > agujaRuleta) {
+        for (Individuo p : poblacion) {
+            fitnessAcumulado += p.getFitness();
+            if (fitnessAcumulado >= agujaRuleta) {
                 indexPadre1 = index;
+                fitnessTotal -= poblacion.get(indexPadre1).getFitness();
                 break;
             }
             index++;
         }
 
-        //System.out.println("ft=" + fitnessTotal + " - " + poblacion.get(indexPadre1).getFitness());
-        fitnessTotal = fitnessTotal - poblacion.get(indexPadre1).getFitness();
-        //System.out.println(fitnessTotal);
-        //agujaRuleta = this.getAleatorioEnteroEntre(0, (int) (fitnessTotal));
-        agujaRuleta = Math.random() * fitnessTotal;
-        //System.out.println("Valor de la aguja para 2do padre:" + agujaRuleta);
         /* Escogemos al segundo padre */
+        agujaRuleta = Math.random() * fitnessTotal;
+        System.out.println("TotalFitness: " + df.format(fitnessTotal) + " Ruleta 1: " + df.format(agujaRuleta));
         fitnessAcumulado = 0;
         index = 0;
-        for (Individuo i : poblacion) {
+        for (Individuo p : poblacion) {
             if (index == indexPadre1) {
                 index++;
-                continue;
-            } // Si es el primero padre ya no lo elige
-            fitnessAcumulado += i.getFitness();
-            if (fitnessAcumulado > agujaRuleta) {
+                continue; // Not the same parent
+            }
+            fitnessAcumulado += p.getFitness();
+            if (fitnessAcumulado >= agujaRuleta) {
                 indexPadre2 = index;
                 break;
             }
@@ -82,11 +84,8 @@ public class HelperGenetico {
         }
 
         List<Individuo> padres = new ArrayList<>();
-        Individuo p1 = new Individuo(poblacion.get(indexPadre1).getCromosoma());
-        Individuo p2 = new Individuo(poblacion.get(indexPadre2).getCromosoma());
-        padres.add(p1);
-        padres.add(p2);
-        //this.imprimirPoblacion(padres);
+        padres.add(poblacion.get(indexPadre1));
+        padres.add(poblacion.get(indexPadre2));
         return padres;
     }
 
@@ -95,10 +94,10 @@ public class HelperGenetico {
     }
 
     public void evaluarPoblacion(List<Individuo> poblacion) {
-
         for (Individuo indv : poblacion) {
             indv.setFitness(this.evaluarFitness(indv.getCromosoma()));
         }
+        imprimirPoblacion(poblacion);
     }
 
     public double evaluarFitness(List<Integer> cromosoma) {
@@ -111,33 +110,34 @@ public class HelperGenetico {
         int index = 0;
         for (Integer gen : cromosoma) {
             if (gen == 1) {
-                denominador = this.proyectos.getmCostos().get(index) * this.proyectos.getmRiesgos().get(index) *
+                denominador = this.proyectos.getmCostos().get(index) *
+                        this.proyectos.getmRiesgos().get(index) *
                         this.proyectos.getmTiempos().get(index);
                 sumaScores += this.getProyectos().getmGanancias().get(index) / denominador;
                 sumaCostos += this.proyectos.getmCostos().get(index);
             }
             index++;
         }
-
-        if (sumaCostos > this.proyectos.getPresupuesto()) return -1;
+        if (sumaCostos > this.proyectos.getPresupuesto()) return 0;
         fitness = sumaScores * 10;
-
         return fitness;
     }
 
-    public List<Individuo> seleccionarNuevaPoblacion(List<Individuo> poblacion, List<Individuo> descendientes, int numeroSobrevivientes) {
+    public List<Individuo> seleccionarNuevaPoblacion(List<Individuo> poblacion,
+                                                     List<Individuo> descendientes,
+                                                     int numeroSobrevivientes) {
         List<Individuo> nuevaPoblacion = new ArrayList<>();
-
-        for (Individuo nuevo : descendientes) { // une las dos poblaciones
-            poblacion.add(nuevo);
-        }
-        // Ordenamos de mayor a menor
+        // une las dos poblaciones
+        poblacion.addAll(descendientes);
+        // Ordenamos de mayor a menor para añadir los padres e hijos mas fuertes
         poblacion.sort(Comparator.comparing(Individuo::getFitness).reversed());
-
         for (int i = 0; i < numeroSobrevivientes; i++) {
             nuevaPoblacion.add(poblacion.get(i));
         }
-
+        System.out.println("Población Anterior");
+        this.imprimirPoblacion(poblacion);
+        System.out.println("Nueva POblación");
+        this.imprimirPoblacion(nuevaPoblacion);
         return nuevaPoblacion;
     }
 
@@ -199,10 +199,8 @@ public class HelperGenetico {
     }
 
     public void imprimirPoblacion(List<Individuo> poblacion) {
-        //System.out.println("_________________________");
         for (Individuo i : poblacion) {
             System.out.println(i);
         }
-        //System.out.println("_________________________");
     }
 }

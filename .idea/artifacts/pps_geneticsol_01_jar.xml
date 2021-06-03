@@ -2,7 +2,7 @@
   <artifact type="jar" name="pps-geneticsol-01:jar">
     <output-path>$PROJECT_DIR$/out/artifacts/pps_geneticsol_01_jar</output-path>
     <root id="archive" name="pps-geneticsol-01.jar">
-      <element id="module-output" name="pps-geneticsol-01" />
+      <element id="module-output" name="pps_gen_tesis2_pucp" />
       <element id="extracted-dir" path="$PROJECT_DIR$/poi-5.0.0.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/commons-math3-3.6.1.jar" path-in-jar="/" />
     </root>

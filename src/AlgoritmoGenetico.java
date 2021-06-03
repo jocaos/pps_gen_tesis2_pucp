@@ -5,6 +5,7 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.sql.SQLOutput;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -19,6 +20,7 @@ public class AlgoritmoGenetico {
     private double tasaCruzamiento;
     private int numeroSobrevivientes;
     private Individuo bestInd;
+    private int pacienciaMax;
 
     private HelperGenetico helper;
 
@@ -72,83 +74,107 @@ public class AlgoritmoGenetico {
         helper.evaluarPoblacion(individuos);
     }
 
-    private List<Individuo> cruzarPoblacion(double tasaCruzamiento) {
+    private List<Individuo> cruzarPoblacion(List<Individuo> poblacion, double tasaCruzamiento) {
         /* Seleccionamos lo padres para el cruzamiento */
         List<List<Individuo>> listaPadres = new ArrayList<>();
-        for (int j = 0; j < (this.getPoblacion().size() /2 ); j++)
-            System.out.println(j);
-            listaPadres.add(helper.elegirPadrePorRuleta(this.poblacion));
-
-        /* Crea la población descendencia cruzando las parejas del mating pool con recombinación de 1 punto */
+        for (int j = 0; j < (poblacion.size() * tasaCruzamiento); j++)
+            listaPadres.add(helper.elegirPadrePorRuleta(poblacion));
+        /* Crea la población descendencia con recombinación de 1 punto */
         List<Individuo> pob_desdenciente = new ArrayList<>();
         //System.out.println("Cruzando padres");
         for (List<Individuo> padres : listaPadres) {
-            //System.out.println("Padres:");
-            //helper.imprimirPoblacion(padres);
             List<Individuo> hijos = padres.get(0).cruzamientoOnePoint(padres.get(1));
-            //System.out.println("Hijos");
-            //helper.imprimirPoblacion(hijos);
             pob_desdenciente.add(hijos.get(0));
             pob_desdenciente.add(hijos.get(1));
+            System.out.println(padres.get(0) + " " + hijos.get(0));
+            System.out.println(padres.get(1) + " " + hijos.get(1));
         }
         return pob_desdenciente;
     }
 
-    private void mutarHijos(double tasaMutacion, List<Individuo> pob_desdenciente) {
-        /* Aplica el operador de mutación con probabilidad pmut en cada hijo generado */
-        //System.out.println("Hijos antes de mutar");
-        //helper.imprimirPoblacion(pob_desdenciente);
+    private void mutarHijos(List<Individuo> pob_desdenciente, double tasaMutacion) {
+        /* Aplica el operador de mutación con probabilidad 1/sizeIndv en la poblacion */
         for (Individuo hijo : pob_desdenciente) {
-            if (Math.random() < this.getTasaMutacion()) {
-                hijo.mutarIndividuo();
+            System.out.print(hijo.imprimirSimple() + " --> ");
+            if (Math.random() < tasaMutacion) {
+                System.out.print("M: ");
+                hijo.mutarIndividuoTMut(tasaMutacion);
             }
+            System.out.println(hijo.imprimirSimple());
         }
-        //System.out.println("Hijos después de mutar");
-        //helper.imprimirPoblacion(pob_desdenciente);
-        evaluarIndividuos(pob_desdenciente);
-        //System.out.println("Hijos evaluados");
-        //helper.imprimirPoblacion(pob_desdenciente);
     }
 
-    private void seleccionarNuevaPoblacion(List<Individuo> pob_desdenciente, int numeroSobrevivientes) {
-        /* Selecciona popsize individuos para la sgte. generación de la union de la pob. actual y  pob. descendencia */
-        this.setPoblacion(helper.seleccionarNuevaPoblacion(this.getPoblacion(), pob_desdenciente, numeroSobrevivientes));
-        //System.out.println("Nueva Población");
-        //helper.imprimirPoblacion(this.getPoblacion());
+    private void mutarAllHijos(List<Individuo> pob_desdenciente, double tasaMutacion) {
+        /* Aplica el operador de mutación con probabilidad 1/sizeIndv en la poblacion */
+        for (Individuo hijo : pob_desdenciente) {
+            System.out.print(hijo.imprimirSimple() + " --> ");
+            System.out.print("M: ");
+            hijo.mutarIndividuo(tasaMutacion);
+            System.out.println(hijo.imprimirSimple());
+        }
+    }
+
+    private void seleccionarNuevaPoblacion(List<Individuo> poblacion, List<Individuo> pob_desdenciente, int numeroSobrevivientes) {
+        /* Selecciona popsize individuos para la sgte. generación de
+         la union de la pob. actual y  pob. descendencia */
+        this.setPoblacion(helper.seleccionarNuevaPoblacion(
+                poblacion, pob_desdenciente, numeroSobrevivientes));
     }
 
     public void run() {
+        DecimalFormat df = new DecimalFormat();
+        df.setMaximumFractionDigits(2);
 
+        int paciencia = 10;
         List<Double> bestfitness = new ArrayList<>();
 
         definirPoblacion();
+        System.out.println("Población inicial");
         evaluarPoblacion();
-
         // Obtiene el mejor individuo de la población y registra el mejor fitness
         this.bestInd = Collections.max(this.getPoblacion(), new CompararIndividuos());
         bestfitness.add(bestInd.getFitness());
-        System.out.println("Poblacion Inicial, mejor fitness = " + this.bestInd.getFitness());
+        System.out.println("Población inicial: BestFitness = " + df.format(this.bestInd.getFitness()));
 
-        // Inicial el la generaciones
-        for (int i = 0; i < this.getNumGeneraciones(); i++) { // Por cada generación
-            List<Individuo> pob_desdenciente;
-            pob_desdenciente = cruzarPoblacion(this.tasaCruzamiento);
-            mutarHijos(this.tasaMutacion, pob_desdenciente);
-            seleccionarNuevaPoblacion(pob_desdenciente, this.numeroSobrevivientes);
-            /* Almacena la historia del fitness del mejor individuo */
+        // Inicial el algoritmo genético
+        for (int i = 0; i < this.getNumGeneraciones(); i++) {
+            System.out.println("-----------------------------------------------------------------------");
+            System.out.println("----------------Generación-" + (1 + i) + "-------------------------------------------");
+            System.out.println("-----------------------------------------------------------------------");
+            /* Cruzamiento */
+            System.out.println("Cruzamiento::");
+            List<Individuo> pob_desdenciente = cruzarPoblacion(this.poblacion, this.tasaCruzamiento);
+            /* Mutación */
+            System.out.println("Mutación::");
+            mutarAllHijos(pob_desdenciente, this.tasaMutacion);
+
+            /* Inicia la búsqueda local del mejor individuo en hijos */
+            System.out.println("Iniciando búsqueda local:");
+            Individuo mejorVecino = busquedaLocalFFD(pob_desdenciente);
+            System.out.println(mejorVecino);
+
+            /* Selección de la nueva población o depuracion*/
+            evaluarIndividuos(pob_desdenciente);
+            seleccionarNuevaPoblacion(this.poblacion, pob_desdenciente, this.numeroSobrevivientes);
+            /* Almacena y muestra la historia del fitness del mejor individuo */
             this.bestInd = Collections.max(this.getPoblacion(), new CompararIndividuos());
-            bestfitness.add(this.bestInd.getFitness());
 
-            /* Inicio del algoritmo memético: búsqueda local *
-            //this.busquedaLocalFFD();
-            //* Almacena la historia del fitness del mejor individuo */
-            //this.bestInd = Collections.max(this.getPoblacion(), new CompararIndividuos());
-            //bestfitness.add(this.bestInd.getFitness());
-            System.out.println("Generación: " + (i + 1) + ", mejor fitness = " + this.bestInd.getFitness());
+            if (mejorVecino.getFitness() > this.bestInd.getFitness())
+                this.bestInd = mejorVecino;
+
+            System.out.println("Generación: " + (i + 1) + ", mejor fitness = " + df.format(this.bestInd.getFitness()));
+
+            /* Actualización de la paciencia */
+            /*if (bestInd.getFitness() > bestfitness.get(bestfitness.size() - 1)) {
+                bestfitness.add(this.bestInd.getFitness());
+                paciencia = 0;
+            } else {
+                paciencia++;
+            }
+            if (paciencia == this.pacienciaMax) break;*/
         }
-
         System.out.println(this.bestInd.getCromosoma());
-        this.printSolucion(helper.getProyectos(), this.bestInd);
+        //this.printSolucion(helper.getProyectos(), this.bestInd);
 
     }
 
@@ -225,27 +251,41 @@ public class AlgoritmoGenetico {
         }
     }
 
-    private void busquedaLocalFFD() {
-        List<Integer> proyecOrdenadosDes = helper.getProyectos().getProjectosOrdDescendente();
+    private Individuo busquedaLocalFFD(List<Individuo> poblacion) {
 
-        for (Individuo indv : this.getPoblacion()) {
-            //System.out.print(indv + "mejorado a ");
+        List<Integer> proyecOrdenadosDes = helper.getProyectos().getProjectosOrdDescendente();
+        List<Individuo> vecinos = new ArrayList<>();
+
+        for (Individuo indv : poblacion) {
+
+            Individuo vecino = new Individuo(copiaCromosoma(indv));
+
+            System.out.print(vecino.imprimirSimple() + "-->");
             int costoSol = this.calcularCostoIndividuo(indv.getCromosoma());
             if (costoSol < helper.getProyectos().getPresupuesto()) {
                 int costoTemporal = costoSol;
                 for (Integer indProyecto : proyecOrdenadosDes) {
-                    if (indv.getCromosoma().get(indProyecto) == 0) {
+                    if (vecino.getCromosoma().get(indProyecto) == 0) {
                         costoTemporal += helper.getProyectos().getmCostos().get(indProyecto);
                         if (costoTemporal <= helper.getProyectos().getPresupuesto()) {
-                            indv.getCromosoma().set(indProyecto, 1);
+                            vecino.getCromosoma().set(indProyecto, 1);
+                            System.out.print(vecino.imprimirSimple() + "-->");
                         }
                     }
                 }
+                vecinos.add(vecino);
             }
-            //System.out.println(indv);
+            System.out.print("End::\n");
         }
-        helper.evaluarPoblacion(this.getPoblacion());
-        //helper.imprimirPoblacion(this.getPoblacion());
+        this.evaluarIndividuos(vecinos);
+        return Collections.max(vecinos, new CompararIndividuos());
+    }
+
+    private List<Integer> copiaCromosoma(Individuo indv) {
+        List<Integer> cromosoma = new ArrayList<>();
+        for (Integer gen : indv.getCromosoma())
+            cromosoma.add(gen);
+        return cromosoma;
     }
 
     private int calcularCostoIndividuo(List<Integer> cromosoma) {

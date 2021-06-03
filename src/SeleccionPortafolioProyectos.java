@@ -23,7 +23,7 @@ public class SeleccionPortafolioProyectos {
         /* Configuración de algoritmo genético*/
         int numGeneraciones = 3;
         int sizePoblacion = 4;
-        double tasaMutacion = 0.5;
+        double tasaMutacion = 0.2;
         double tasaCruzamiento = 0.5;
 
         AlgoritmoGenetico ag = new AlgoritmoGenetico(proyectos,
